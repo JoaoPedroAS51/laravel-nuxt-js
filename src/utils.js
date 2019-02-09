@@ -21,8 +21,7 @@ module.exports.configPath = configPath;
  */
 module.exports.pipeStdio = (child, name) => {
     const out = data => {
-        data
-            .toString()
+        data.toString()
             .trim()
             .split("\n")
             .forEach(text => {
