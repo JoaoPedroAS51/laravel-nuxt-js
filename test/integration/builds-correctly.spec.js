@@ -23,7 +23,7 @@ test("should build correctly", t => {
         fs.existsSync(
             path.resolve(
                 baseDir,
-                "storage/app/nuxt/vue-ssr-client-manifest.json",
+                "storage/app/nuxt/client.manifest.json",
             ),
         ),
     );

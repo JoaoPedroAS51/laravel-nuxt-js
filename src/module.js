@@ -27,11 +27,11 @@ module.exports = function() {
             fs.copySync(
                 path.resolve(
                     this.options.buildDir,
-                    "dist/vue-ssr-client-manifest.json",
+                    "dist/server/client.manifest.json",
                 ),
                 path.resolve(
                     this.options.generate.dir,
-                    "vue-ssr-client-manifest.json",
+                    "client.manifest.json",
                 ),
             );
 
