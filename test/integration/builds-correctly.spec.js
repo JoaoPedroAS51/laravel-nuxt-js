@@ -21,10 +21,7 @@ test("should build correctly", t => {
     t.true(fs.existsSync(path.resolve(baseDir, "storage/app/nuxt/index.html")));
     t.true(
         fs.existsSync(
-            path.resolve(
-                baseDir,
-                "storage/app/nuxt/client.manifest.json",
-            ),
+            path.resolve(baseDir, "storage/app/nuxt/client.manifest.json"),
         ),
     );
 });

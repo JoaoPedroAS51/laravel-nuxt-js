@@ -29,10 +29,7 @@ module.exports = function() {
                     this.options.buildDir,
                     "dist/server/client.manifest.json",
                 ),
-                path.resolve(
-                    this.options.generate.dir,
-                    "client.manifest.json",
-                ),
+                path.resolve(this.options.generate.dir, "client.manifest.json"),
             );
 
             // Move the compiled assets to the public directory.
