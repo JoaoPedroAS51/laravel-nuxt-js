@@ -1,44 +1,55 @@
 const fs = require("fs");
+const _ = require("lodash");
 const path = require("path");
 const chalk = require("chalk");
-const spawn = require("cross-spawn");
 
+// This string identifier will be used to ensure that
+// the Nuxt config is wrapped by our higher-level function.
 const validationSymbol = "__laravel_nuxt__";
-
-const configPath = path.resolve(process.cwd(), "nuxt.config.js");
-
-const normalize = data => data.toString().trim();
-
-module.exports.pipeStdio = (child, name) => {
-    child.stdout.on("data", data =>
-        console.log(`${chalk.gray(`[${name}]`)} ${normalize(data)}`),
-    );
-    child.stderr.on("data", data =>
-        console.error(`${chalk.gray(`[${name}]`)} ${normalize(data)}`),
-    );
-};
-
-module.exports.exitOnClose = ([...childs], callback) => {
-    childs.forEach(child =>
-        child.on("exit", code => {
-            callback();
-            process.exit(code);
-        }),
-    );
-};
-
-module.exports.kill = child => {
-    if (process.platform !== "win32") {
-        spawn("sh", ["-c", "kill -INT -" + child.pid]);
-    } else {
-        child.kill("SIGINT");
-    }
-};
-
 module.exports.validationSymbol = validationSymbol;
 
+// The path were the Nuxt config should be.
+const configPath = path.resolve(process.cwd(), "nuxt.config.js");
 module.exports.configPath = configPath;
 
+/**
+ * Print all of the data of the given child process to the console.
+ *
+ * @param {ChildProcess} child
+ * @param {string} name
+ * @return {void}
+ */
+module.exports.pipeStdio = (child, name) => {
+    const out = data => {
+        data.toString()
+            .trim()
+            .split("\n")
+            .forEach(text => {
+                if (text.length > 0) {
+                    console.log(`${chalk.gray(`[${name}]`)} ${text}`);
+                }
+            });
+    };
+
+    child.stdout.on("data", out);
+    child.stderr.on("data", out);
+};
+
+/**
+ * Close the main process if the child process exits.
+ *
+ * @param {ChildProcess} child
+ * @return {void}
+ */
+module.exports.exitOnClose = child => {
+    child.on("close", code => {
+        process.exit(code);
+    });
+};
+
+/**
+ * Print an error and stop the process if the Nuxt config is not valid.
+ */
 module.exports.validateConfig = () => {
     if (!fs.existsSync(configPath)) {
         console.error(
@@ -61,4 +72,22 @@ module.exports.validateConfig = () => {
         );
         process.exit(1);
     }
+};
+
+/**
+ * Check wether the given string is an URL or not.
+ *
+ * @param {string} url
+ */
+exports.isUrl = url => {
+    return url.indexOf("http") === 0 || url.indexOf("//") === 0;
+};
+
+/**
+ * Normalize the given public path, so it works with path.join.
+ *
+ * @param {string} publicPath
+ */
+exports.normalizePublicPath = publicPath => {
+    return exports.isUrl(publicPath) ? "" : _.trim(publicPath, "/");
 };

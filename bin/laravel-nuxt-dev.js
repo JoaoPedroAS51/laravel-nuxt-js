@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const _ = require("lodash");
 const { URL } = require("url");
 const ON_DEATH = require("death");
 const spawn = require("cross-spawn");
@@ -27,62 +28,70 @@ program
         "URL path used to render the SPA",
         "/__laravel_nuxt__",
     )
+    .option("--no-color", "Disable colored output")
     .parse(process.argv);
 
+// TODO Allow passing both ports.
 const NUXT_PORT = parseInt(program.port);
 const LARAVEL_PORT = NUXT_PORT + 1;
 
+// The URL that will actually render the SPA HTML
+// without proxying to the Laravel backend.
 const renderUrl = new URL(
     program.renderPath,
     `http://${program.hostname}:${NUXT_PORT}`,
 );
 
+// Stop the process if the config is not OK.
 utils.validateConfig();
 
 const nuxt = spawn(
     which.sync("nuxt"),
-    [
+    _.filter([
         "dev",
         `-c=${utils.configPath}`,
         "--spa",
         `--port=${NUXT_PORT}`,
         `--hostname=${program.hostname}`,
-    ],
+        program.color ? "--color" : null,
+    ]),
     {
         env: {
             ...process.env,
+            // All of the requests will be proxied to Laravel...
             LARAVEL_URL: `http://${program.hostname}:${LARAVEL_PORT}`,
+            // ...except for this one, which will actually render.
             RENDER_PATH: renderUrl.pathname,
         },
-        detached: true,
     },
 );
+utils.pipeStdio(nuxt, "nuxt");
+utils.exitOnClose(nuxt);
 
 const laravel = spawn(
     "php",
-    [
+    _.filter([
         "artisan",
         "serve",
         `--host=${program.hostname}`,
         `--port=${LARAVEL_PORT}`,
-    ],
+        program.color ? "--ansi" : null,
+    ]),
     {
-        env: Object.assign({}, process.env, {
+        env: {
+            ...process.env,
+            // The Laravel's NuxtController will
+            // fetch the SPA's HTML from this URL.
             NUXT_URL: renderUrl,
             APP_URL: `http://${program.hostname}:${NUXT_PORT}`,
-        }),
-        detached: true,
+        },
     },
 );
-
-utils.pipeStdio(nuxt, "nuxt");
 utils.pipeStdio(laravel, "laravel");
+utils.exitOnClose(laravel);
 
-const cleanUp = () => {
-    utils.kill(nuxt);
-    utils.kill(laravel);
-};
-utils.exitOnClose([nuxt, laravel], cleanUp);
+// Ensure that both child processes are killed at the end.
 ON_DEATH(() => {
-    cleanUp();
+    nuxt.kill();
+    laravel.kill();
 });
