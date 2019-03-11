@@ -8,7 +8,7 @@ const pkg = require("../package.json");
 
 program
     .version(pkg.version)
-    .description("Compiles the application for production deployment")
+    .description("Start the server in production mode")
     .option(
         "-a, --analyze",
         "Launch webpack-bundle-analyzer to optimize your bundles",
@@ -19,14 +19,14 @@ program
 // Stop the process if the config is not OK.
 utils.validateConfig();
 
-const build = spawn(
+const start = spawn(
     which.sync("nuxt"),
     _.filter([
-        "build",
+        "start",
         `-c=${utils.configPath}`,
         program.analyze ? "-a" : "",
         program.color ? "--color" : null,
     ]),
 );
-utils.pipeStdio(build, "nuxt");
-utils.exitOnClose(build);
+utils.pipeStdio(start, "nuxt");
+utils.exitOnClose(start);

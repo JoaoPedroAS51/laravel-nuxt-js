@@ -50,7 +50,6 @@ const nuxt = spawn(
     _.filter([
         "dev",
         `-c=${utils.configPath}`,
-        "--spa",
         `--port=${NUXT_PORT}`,
         `--hostname=${program.hostname}`,
         program.color ? "--color" : null,
